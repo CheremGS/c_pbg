@@ -129,6 +129,30 @@ evolve_pubg/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/evolve_pubg.dir/build.make CMakeFiles/evolve_pubg.dir/build
 .PHONY : evolve_pubg/fast
 
+c_version.o: c_version.cpp.o
+.PHONY : c_version.o
+
+# target to build an object file
+c_version.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/evolve_pubg.dir/build.make CMakeFiles/evolve_pubg.dir/c_version.cpp.o
+.PHONY : c_version.cpp.o
+
+c_version.i: c_version.cpp.i
+.PHONY : c_version.i
+
+# target to preprocess a source file
+c_version.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/evolve_pubg.dir/build.make CMakeFiles/evolve_pubg.dir/c_version.cpp.i
+.PHONY : c_version.cpp.i
+
+c_version.s: c_version.cpp.s
+.PHONY : c_version.s
+
+# target to generate assembly for a file
+c_version.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/evolve_pubg.dir/build.make CMakeFiles/evolve_pubg.dir/c_version.cpp.s
+.PHONY : c_version.cpp.s
+
 dph_eq_solver.o: dph_eq_solver.cpp.o
 .PHONY : dph_eq_solver.o
 
@@ -162,6 +186,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... evolve_pubg"
+	@echo "... c_version.o"
+	@echo "... c_version.i"
+	@echo "... c_version.s"
 	@echo "... dph_eq_solver.o"
 	@echo "... dph_eq_solver.i"
 	@echo "... dph_eq_solver.s"
