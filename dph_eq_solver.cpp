@@ -4,17 +4,17 @@
 
 int main()
 {
-    const int GEN_SIZE = 20;
+    const int GEN_SIZE = 50;
     const int EQ_SIZE = 4;
     const int coefs[5] = {1, 2, 3, 4, -30};
     const int iters_number = 20;
-    const double mutation_prob = 0.2;
+    const double mutation_prob = 0.5;
     
     double parents_fitness[GEN_SIZE];
     double children_fitness[GEN_SIZE];
     int best_individ[EQ_SIZE];
     std::string gen_init_mode = "random";
-    int **old_generation = init_population(GEN_SIZE, EQ_SIZE, gen_init_mode);
+    int **old_generation = init_dyn_matrix(GEN_SIZE, EQ_SIZE, gen_init_mode);
 
     for(int i=0; i<iters_number; i++)
     {
