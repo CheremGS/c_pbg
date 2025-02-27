@@ -14,7 +14,7 @@ int main()
     double children_fitness[GEN_SIZE];
     int best_individ[EQ_SIZE];
     std::string gen_init_mode = "random";
-    int **old_generation = init_dyn_matrix(GEN_SIZE, EQ_SIZE, gen_init_mode);
+    int **old_generation = init_population(GEN_SIZE, EQ_SIZE, gen_init_mode);
 
     for(int i=0; i<iters_number; i++)
     {

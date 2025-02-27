@@ -4,15 +4,15 @@
 #include <string>
 #include <random>
 
-const bool DEBUG = false;
+const bool DEBUG = true;
 
 constexpr int POINT_NUMBER = 6;
 constexpr int ANT_COLONY_SIZE = POINT_NUMBER;
-const int ASCII_0_CODE = 48;
 
 const float BETA = 1.0;
 const float ALPHA = 1.0;
 const float BASE_PHERO_VALUE = 0.5;
+const float EVAPORATION_RATE = 0.1;
 
 struct Ant {
     int ant_path[POINT_NUMBER];
@@ -45,6 +45,13 @@ void aco_opt(const std::string path_data, const int num_iterations){
     read_txt_matrix(point_distance_matrix, path_data);
     init_phero_values(point_distance_matrix, pheromona_matrix);
 
+    if(DEBUG){
+        std::cout << "Init values in distance matrix:" << '\n';
+        print_2darray(point_distance_matrix, POINT_NUMBER, POINT_NUMBER);
+        std::cout << "Init values in pheromona matrix:" << '\n';
+        print_2darray(pheromona_matrix, POINT_NUMBER, POINT_NUMBER);
+    }
+
     int* best_path;
     double min_path_len = __DBL_MAX__;
     
@@ -71,7 +78,7 @@ void aco_opt(const std::string path_data, const int num_iterations){
 void pheromona_update(double** pheromona_matrix, Ant* ant_colony){
     for(int i_ant=0; i_ant<ANT_COLONY_SIZE; i_ant++){
         if(ant_colony[i_ant].loop_path){
-            double delta_pheros = double(ant_colony[i_ant].path_len - 1)/ant_colony[i_ant].weight_path_len;
+            double delta_pheros = double(POINT_NUMBER)/ant_colony[i_ant].weight_path_len;
             for(int i_edge=0; i_edge<POINT_NUMBER-1; i_edge++){
                 pheromona_matrix[i_edge][i_edge+1] += delta_pheros;
             }
@@ -79,11 +86,16 @@ void pheromona_update(double** pheromona_matrix, Ant* ant_colony){
         else
             continue;
     }
+    if(DEBUG){
+        std::cout << "Update pheromona matrix" << '\n'; 
+        print_2darray(pheromona_matrix, POINT_NUMBER, POINT_NUMBER);
+    }
+        
 }
 
 void ant_colony_run(Ant ant_colony[ANT_COLONY_SIZE], double** path_pheromona, int** point_distances){
     for(int i_ant=0; i_ant < ANT_COLONY_SIZE; i_ant++){
-        std::cout << "Ant " << i_ant << " run:" << std::endl;
+        std::cout << " - - - - - Ant " << i_ant << " run - - - - - " << '\n';
         ant_run(ant_colony[i_ant], path_pheromona, point_distances);
         std::cout << ant_colony[i_ant];
     }
@@ -96,7 +108,9 @@ void ant_run(Ant& ant, double** path_pheromona, int** point_distances){
             ant.loop_path = true;
             break;
         }
-        int* ant_loc_paths = point_distances[ant.ant_path[i]];
+        int ant_loc_paths[POINT_NUMBER];
+        for(int n=0; n< POINT_NUMBER; n++)
+            ant_loc_paths[n] = point_distances[ant.ant_path[i]][n];
         double available_path_len = 0;
         double* ant_loc_pheros = path_pheromona[ant.ant_path[i]];
         if(DEBUG){
@@ -119,14 +133,14 @@ void ant_run(Ant& ant, double** path_pheromona, int** point_distances){
         
         if(available_path_len > 0){
             int ant_next_point = ant_step(ant_loc_paths, ant_loc_pheros, ant.ant_path);
+            ant.ant_path[i+1] = ant_next_point;
+            ant.weight_path_len += ant_loc_paths[ant_next_point];
+            ant.path_len++;
             if(DEBUG){
                 std::cout << "Ant choose point " << ant_next_point << std::endl;
                 std::cout << "Ant path: ";
                 print_1darray(ant.ant_path, POINT_NUMBER);
             }
-            ant.ant_path[i+1] = ant_next_point;
-            ant.weight_path_len += ant_loc_paths[ant_next_point];
-            ant.path_len++;
         }
         else
             break;
@@ -190,10 +204,10 @@ void read_txt_matrix(int** matrix, const std::string data_file = "./postman_data
     if(!file_stream)
         std::cerr << "Error file read process!" << std::endl;
     else {
-        char strInput{};
+        std::string strInput{};
         int index = 0;
         while(file_stream >> strInput){
-            matrix[index/POINT_NUMBER][index%POINT_NUMBER] = int(strInput) - ASCII_0_CODE;
+            matrix[index/POINT_NUMBER][index%POINT_NUMBER] = std::stoi(strInput);
             index++;
         }
     }
