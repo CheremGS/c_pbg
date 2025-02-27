@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <random>
+#include <algorithm>
 
 const bool DEBUG = true;
 
@@ -14,6 +15,8 @@ const float ALPHA = 1.0;
 const float BASE_PHERO_VALUE = 0.5;
 const float EVAPORATION_RATE = 0.1;
 
+const int UPDATE_PHERO_MODE = 1;
+const float RAS_W = 0.5; // for UPDATE_PHERO_MODE = 1;
 struct Ant {
     int ant_path[POINT_NUMBER];
     int path_len = 1;
@@ -30,7 +33,7 @@ int ant_step(int* distance, const double* pheromona, const int* blocked_points);
 void ant_run(Ant& ant, double** path_pheromona, int** point_distances);
 void ant_colony_run(Ant ant_colony[ANT_COLONY_SIZE], double** path_pheromona, int** point_distances);
 void aco_opt(const std::string path_data, const int num_iterations);
-void pheromona_update(double** pheromona_matrix, Ant* ant_colony);
+void pheromona_update(double** pheromona_matrix, Ant* ant_colony, char update_mode);
 
 std::ostream& operator<<(std::ostream& out, Ant ant);
 template <typename T1d>
@@ -60,7 +63,7 @@ void aco_opt(const std::string path_data, const int num_iterations){
         Ant ant_colony[POINT_NUMBER];
         init_ants_points(ant_colony);
         ant_colony_run(ant_colony, pheromona_matrix, point_distance_matrix);
-        pheromona_update(pheromona_matrix, ant_colony);
+        pheromona_update(pheromona_matrix, ant_colony, UPDATE_PHERO_MODE);
         for(int i_ant=0; i_ant < ANT_COLONY_SIZE; i_ant++){
             if(ant_colony[i_ant].loop_path)
                 if(ant_colony[i_ant].weight_path_len < min_path_len){
@@ -73,24 +76,58 @@ void aco_opt(const std::string path_data, const int num_iterations){
                 continue;
         }
     }
+    std::cout << "Optimal path with length = " << int(min_path_len) << ": " << '\n';
+    print_1darray(best_path, POINT_NUMBER);
+    delete point_distance_matrix;
+    delete pheromona_matrix;
 }
 
-void pheromona_update(double** pheromona_matrix, Ant* ant_colony){
-    for(int i_ant=0; i_ant<ANT_COLONY_SIZE; i_ant++){
-        if(ant_colony[i_ant].loop_path){
-            double delta_pheros = double(POINT_NUMBER)/ant_colony[i_ant].weight_path_len;
-            for(int i_edge=0; i_edge<POINT_NUMBER-1; i_edge++){
-                pheromona_matrix[i_edge][i_edge+1] += delta_pheros;
+void pheromona_update(double** pheromona_matrix, Ant* ant_colony, char update_mode){
+    /* 0 - Ant system: ant with path that include all points influence on pheromona with (N/path_len) delta
+       1 - Rank-Based Ant System: only best N ants influence pheromona 
+    */
+    for(int i=0; i<POINT_NUMBER; i++)
+        for(int j=0; j<POINT_NUMBER; j++)
+            pheromona_matrix[i][j] *= (1-EVAPORATION_RATE);
+
+    if(update_mode==0){
+        for(int i_ant=0; i_ant<ANT_COLONY_SIZE; i_ant++){
+            if(ant_colony[i_ant].loop_path){
+                double delta_pheros = double(POINT_NUMBER)/ant_colony[i_ant].weight_path_len;
+                for(int i_edge=0; i_edge<POINT_NUMBER-1; i_edge++)
+                    pheromona_matrix[i_edge][i_edge+1] += delta_pheros;
             }
+            else
+                continue;
+        }
+    } 
+    else if(update_mode==1){
+        std::vector<double> length_array(ANT_COLONY_SIZE);
+        int bound_index = int(ANT_COLONY_SIZE * RAS_W);
+
+        for(int i_ant=0; i_ant<ANT_COLONY_SIZE; i_ant++)
+            length_array[i_ant] = (ant_colony[i_ant].loop_path)?(ant_colony[i_ant].weight_path_len):(__DBL_MAX__);
+        std::sort(length_array.begin(), length_array.end());
+        double bound_value = length_array[bound_index];
+        while(bound_value == __DBL_MAX__){
+            bound_index--;
+            bound_value = length_array[bound_index];
+        }
+        if(bound_index >= 0){
+            for(int i_ant=0; i_ant<ANT_COLONY_SIZE; i_ant++)
+                if(ant_colony[i_ant].weight_path_len < bound_value){
+                    double delta_pheros = (bound_value - ant_colony[i_ant].weight_path_len)/ant_colony[i_ant].weight_path_len;
+                    for(int i_edge=0; i_edge<POINT_NUMBER-1; i_edge++)
+                        pheromona_matrix[i_edge][i_edge+1] += delta_pheros;
+                }
         }
         else
-            continue;
+            std::cout << "Current iteration hasnt full ant paths! Pheromona matrix want change." << '\n';
     }
     if(DEBUG){
         std::cout << "Update pheromona matrix" << '\n'; 
         print_2darray(pheromona_matrix, POINT_NUMBER, POINT_NUMBER);
-    }
-        
+    }      
 }
 
 void ant_colony_run(Ant ant_colony[ANT_COLONY_SIZE], double** path_pheromona, int** point_distances){
@@ -198,7 +235,7 @@ void init_phero_values(int** dist_matrix, double** pheros_matrix){
                 pheros_matrix[i][j] = BASE_PHERO_VALUE;
 }
 
-void read_txt_matrix(int** matrix, const std::string data_file = "./postman_data.txt") {
+void read_txt_matrix(int** matrix, const std::string data_file) {
     std::ifstream file_stream{data_file};
     std::string filedata;
     if(!file_stream)
